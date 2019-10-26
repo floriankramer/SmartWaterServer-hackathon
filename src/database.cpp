@@ -22,7 +22,7 @@ Database::~Database() { sqlite3_close(_db); }
 double Database::getLastMeasurement(uint64_t id) {
   std::string sql = "SELECT * FROM `measurements_" + std::to_string(id) + "`";
   sqlite3_stmt *stmt;
-  int r = sqlite3_prepare_v3(_db, sql.c_str(), sql.size(), 0, &stmt, nullptr);
+  int r = sqlite3_prepare_v2(_db, sql.c_str(), sql.size(), &stmt, nullptr);
   if (r != 0) {
     std::cout << "Error when compiling the sql " << sqlite3_errstr(r)
               << std::endl;
@@ -38,7 +38,7 @@ double Database::getLastMeasurement(uint64_t id) {
 std::vector<Sensor> Database::getSensors(size_t limit) {
   std::string sql = "SELECT * FROM `sensors`";
   sqlite3_stmt *stmt;
-  int r = sqlite3_prepare_v3(_db, sql.c_str(), sql.size(), 0, &stmt, nullptr);
+  int r = sqlite3_prepare_v2(_db, sql.c_str(), sql.size(), &stmt, nullptr);
   if (r != 0) {
     std::cout << "Error when compiling the sql " << sqlite3_errstr(r)
               << std::endl;
@@ -65,7 +65,7 @@ std::vector<Sensor> Database::getSensors(size_t limit) {
 std::vector<Measurement> Database::getMeasurements(uint64_t id, size_t limit) {
   std::string sql = "SELECT * FROM `measurements_" + std::to_string(id) + "`";
   sqlite3_stmt *stmt;
-  int r = sqlite3_prepare_v3(_db, sql.c_str(), sql.size(), 0, &stmt, nullptr);
+  int r = sqlite3_prepare_v2(_db, sql.c_str(), sql.size(), &stmt, nullptr);
   if (r != 0) {
     std::cout << "Error when compiling the sql " << sqlite3_errstr(r)
               << std::endl;
@@ -87,7 +87,7 @@ void Database::addSensor(const Sensor &sensor) {
   std::string sql = "INSERT INTO `sensors` VALUES (?, ?, ?, ?, ?, ?)";
   sqlite3_stmt *stmt;
   char *err;
-  int r = sqlite3_prepare_v3(_db, sql.c_str(), sql.size(), 0, &stmt, nullptr);
+  int r = sqlite3_prepare_v2(_db, sql.c_str(), sql.size(), &stmt, nullptr);
   if (r != 0) {
     std::cout << "Error when compiling the sql " << sqlite3_errstr(r)
               << std::endl;
@@ -149,7 +149,7 @@ void Database::addMeasurement(uint64_t id, const Measurement &measurement) {
   std::string table_name = "measurements_" + std::to_string(id);
   sqlite3_stmt *stmt;
   std::string sql = "INSERT INTO `" + table_name + "` VALUES (?, ?)";
-  int r = sqlite3_prepare_v3(_db, sql.c_str(), sql.size(), -1, &stmt, nullptr);
+  int r = sqlite3_prepare_v2(_db, sql.c_str(), sql.size(), &stmt, nullptr);
   if (r != 0 && r != SQLITE_DONE) {
     std::cout << "Error when compiling '" << sql
               << "' for adding a measurement " << sqlite3_errstr(r) << "(" << r
