@@ -7,7 +7,10 @@ int main(int argc, char **argv) {
   uint16_t port = 8080;
   std::string cert;
   std::string key;
-  if (argc == 3) {
+  if (argc == 1) {
+  } else if (argc == 2) {
+    port = atoi(argv[1]);
+  } else if (argc == 3) {
     cert = argv[1];
     key = argv[2];
   } else if (argc == 4) {

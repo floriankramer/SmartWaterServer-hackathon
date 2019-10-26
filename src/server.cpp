@@ -9,10 +9,21 @@ namespace smartwater {
 
 Server::Server(Database *db, const std::string &cert_path,
                const std::string &key_path, uint16_t port)
-    : _port(port), _address("0.0.0.0"),
-      _server(cert_path.c_str(), key_path.c_str()), _database(db) {}
+    : _port(port), _address("0.0.0.0"), _server(), _database(db) {}
 
 void Server::start() {
+
+  _server.set_logger([](const httplib::Request &req, const auto &res) {
+    std::cout << "Request for " << req.path;
+  });
+
+  _server.set_error_handler([](const auto &req, auto &res) {
+    const char *fmt = "<p>Error Status: <span style='color:red;'>%d</span></p>";
+    char buf[BUFSIZ];
+    snprintf(buf, sizeof(buf), fmt, res.status);
+    res.set_content(buf, "text/html");
+  });
+
   _server.Get("/sensors", [this](const httplib::Request &req,
                                  httplib::Response &res) {
     try {
@@ -104,7 +115,9 @@ void Server::start() {
     }
   });
 
-  _server.listen(_address.c_str(), _port);
+  if (!_server.listen(_address.c_str(), _port)) {
+    std::cout << "Error when binding to the socket" << std::endl;
+  }
 } // namespace smartwater
 
 void Server::addMeasurements(const std::string &body) {

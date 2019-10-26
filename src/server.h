@@ -30,7 +30,7 @@ private:
 
   uint16_t _port;
   std::string _address;
-  httplib::SSLServer _server;
+  httplib::Server _server;
   Database *_database;
 };
 } // namespace smartwater
