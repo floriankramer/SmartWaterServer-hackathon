@@ -7,7 +7,8 @@ include_directories(SYSTEM ${CMAKE_CURRENT_LIST_DIR}/../depend/json/include)
 add_library(smartwater-server-lib
   server.cpp server.h
   database.cpp database.h
-  sensor.h)
+  sensor.h
+  util.h)
 target_link_libraries(smartwater-server-lib pthread sqlite3)
 
 
@@ -21,4 +22,8 @@ target_link_libraries(add_sensor smartwater-server-lib)
 
 add_executable(add_measurement add_measurement_main.cpp)
 target_link_libraries(add_measurement smartwater-server-lib)
+
+
+add_executable(generate_data generate_data_main.cpp)
+target_link_libraries(generate_data smartwater-server-lib)
 

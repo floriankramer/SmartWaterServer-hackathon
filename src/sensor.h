@@ -9,6 +9,8 @@ struct Sensor {
   double longitude;
   double latitude;
   std::string name;
+  std::string location_name;
+  std::string dev_uid;
 };
 
 struct Measurement {
