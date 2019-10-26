@@ -8,7 +8,8 @@ add_library(smartwater-server-lib
   server.cpp server.h
   database.cpp database.h
   sensor.h
-  util.h)
+  util.h
+  qgram.cpp qgram.h)
 target_link_libraries(smartwater-server-lib pthread sqlite3 ssl crypto)
 
 
@@ -26,4 +27,9 @@ target_link_libraries(add_measurement smartwater-server-lib)
 
 add_executable(generate_data generate_data_main.cpp)
 target_link_libraries(generate_data smartwater-server-lib)
+
+set(USE_OSMIUM OFF CACHE BOOL "Enables use of libosmium to allow generation of data based upon rivers.")
+if (USE_OSMIUM)
+  add_executable(generate_data_rivers )
+endif (USE_OSMIUM)
 

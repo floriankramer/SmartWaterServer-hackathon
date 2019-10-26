@@ -21,9 +21,11 @@ public:
 
 private:
   nlohmann::json
-  encodeSensors(Database *database, size_t limit,
+  encodeSensors(const std::vector<Sensor> &sensors, Database *db,
                 std::function<bool(const Sensor &)> _filter = nullptr);
-  nlohmann::json encodeHistory(Database *database, size_t limit, uint64_t id);
+  nlohmann::json encodeHistory(const std::vector<Measurement> &measurements);
+
+  void setCommonHeaders(httplib::Response *response);
 
   void addMeasurements(const std::string &body);
   void addSensor(const std::string &body);
