@@ -9,7 +9,7 @@ add_library(smartwater-server-lib
   database.cpp database.h
   sensor.h
   util.h)
-target_link_libraries(smartwater-server-lib pthread sqlite3)
+target_link_libraries(smartwater-server-lib pthread sqlite3 ssl crypto)
 
 
 

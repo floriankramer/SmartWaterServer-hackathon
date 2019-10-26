@@ -7,8 +7,10 @@
 
 namespace smartwater {
 
-Server::Server(Database *db, uint16_t port)
-    : _port(port), _address("0.0.0.0"), _database(db) {}
+Server::Server(Database *db, const std::string &cert_path,
+               const std::string &key_path, uint16_t port)
+    : _port(port), _address("0.0.0.0"),
+      _server(cert_path.c_str(), key_path.c_str()), _database(db) {}
 
 void Server::start() {
   _server.Get("/sensors", [this](const httplib::Request &req,
