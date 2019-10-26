@@ -3,6 +3,7 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
+#include "logger.h"
 #include "util.h"
 
 namespace smartwater {
@@ -12,11 +13,11 @@ Server::Server(Database *db, const std::string &cert_path,
     : _port(port), _address("0.0.0.0"), _server(), _database(db) {}
 
 void Server::start() {
+  LOG_INFO << "Starting the webserver..." << LOG_END;
 
   _server.set_logger(
       [](const httplib::Request &req, const httplib::Response &res) {
-        std::cout << "Request for " << req.path << std::endl;
-        ;
+        LOG_INFO << "Request for " << req.path << LOG_END;
       });
 
   _server.set_error_handler([this](const httplib::Request &req,
@@ -27,6 +28,16 @@ void Server::start() {
     res.set_content(buf, "text/html");
     setCommonHeaders(&res);
   });
+
+  _server.Options(".*",
+                  [this](const httplib::Request &req, httplib::Response &res) {
+                    res.status = 200;
+                    res.headers.clear();
+                    res.set_header("Access-Control-Allow-Origin", "*");
+                    res.set_header("Access-Control-Allow-Methods", "POST, GET");
+                    res.set_header("Access-Control-Max-Age", "86400");
+                    res.set_header("Access-Control-Allow-Headers", "*");
+                  });
 
   _server.Get("/sensors", [this](const httplib::Request &req,
                                  httplib::Response &res) {
@@ -67,7 +78,7 @@ void Server::start() {
       res.set_content(s.c_str(), s.length(), "application/json");
       setCommonHeaders(&res);
     } catch (const std::exception &e) {
-      std::cout << e.what() << std::endl;
+      LOG_ERROR << e.what() << LOG_END;
       res.set_content(e.what(), strlen(e.what()), "application/json");
       res.status = 400;
       setCommonHeaders(&res);
@@ -116,7 +127,7 @@ void Server::start() {
         setCommonHeaders(&res);
       }
     } catch (const std::exception &e) {
-      std::cout << e.what() << std::endl;
+      LOG_ERROR << e.what() << LOG_END;
       res.set_content(e.what(), strlen(e.what()), "application/json");
       res.status = 400;
       setCommonHeaders(&res);
@@ -134,7 +145,7 @@ void Server::start() {
       res.set_content("Done", 4, "application/json");
       setCommonHeaders(&res);
     } catch (const std::exception &e) {
-      std::cout << e.what() << std::endl;
+      LOG_ERROR << e.what() << LOG_END;
       res.set_content(e.what(), strlen(e.what()), "application/json");
       res.status = 400;
       setCommonHeaders(&res);
@@ -149,10 +160,11 @@ void Server::start() {
     using nlohmann::json;
     try {
       addSensor(req.body);
+      res.status = 200;
       res.set_content("Done", 4, "application/json");
       setCommonHeaders(&res);
     } catch (const std::exception &e) {
-      std::cout << e.what() << std::endl;
+      LOG_ERROR << e.what() << LOG_END;
       res.set_content(e.what(), strlen(e.what()), "application/json");
       res.status = 400;
       setCommonHeaders(&res);
@@ -163,8 +175,9 @@ void Server::start() {
     }
   });
 
+  LOG_INFO << "Starting to listen" << LOG_END;
   if (!_server.listen(_address.c_str(), _port)) {
-    std::cout << "Error when binding to the socket" << std::endl;
+    LOG_ERROR << "Error when binding to the socket" << LOG_END;
   }
 } // namespace smartwater
 
@@ -187,12 +200,12 @@ void Server::addSensor(const std::string &body) {
   using nlohmann::json;
   json j = json::parse(body);
   Sensor s;
-  s.id = _database->getSensors().size();
+  s.id = _database->getNumSensors();
   s.name = j["name"].get<std::string>();
-  s.latitude = j["lat"].get<double>();
-  s.longitude = j["long"].get<double>();
-  s.location_name = j["loc-name"].get<std::string>();
-  s.dev_uid = j["dev-uid"].get<std::string>();
+  s.latitude = j["latitude"].get<double>();
+  s.longitude = j["longitude"].get<double>();
+  s.location_name = j["loc_name"].get<std::string>();
+  s.dev_uid = j["dev_uid"].get<std::string>();
   _database->addSensor(s);
 }
 

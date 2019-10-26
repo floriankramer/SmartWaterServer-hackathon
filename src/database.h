@@ -5,7 +5,6 @@
 #include <fstream>
 
 #include <cstdint>
-#include <sqlite3.h>
 #include <unordered_map>
 #include <vector>
 
@@ -16,30 +15,28 @@ class Database {
   // table.
 
   static const int CHUNK_SIZE = 4096;
-  static const int NUM_TABLES_INDEX = 512 - 2;
-  static const int NUM_DATA_BYTES = 4096 - 8 * 3 - 2;
+  static const int NUM_TABLES_INDEX = CHUNK_SIZE / 8 - 2;
+  static const int NUM_DATA_BYTES = CHUNK_SIZE - 8 - 2;
 
   struct IndexChunk {
-    uint64_t num_tables;
+    uint64_t num_tables = 0;
     uint64_t tables[NUM_TABLES_INDEX];
-    uint64_t next_chunk;
+    uint64_t next_chunk = 0;
   };
 
   struct PositionedIndexChunk {
-    uint64_t idx;
+    uint64_t idx = 0;
     IndexChunk data;
   };
 
   struct DataChunk {
-    uint64_t entry_size;
-    uint64_t num_entries;
-    uint16_t bytes_used;
+    uint16_t bytes_used = 0;
     char data[NUM_DATA_BYTES];
-    uint64_t next_chunk;
+    uint64_t next_chunk = 0;
   };
 
   struct PositionedDataChunk {
-    uint64_t idx;
+    uint64_t idx = 0;
     DataChunk data;
   };
 
@@ -48,13 +45,9 @@ public:
   virtual ~Database();
 
   double getLastMeasurement(uint64_t id);
-  std::vector<Measurement> getMeasurements(uint64_t id, size_t t_start = 0,
-                                           size_t t_end = -1,
-                                           size_t limit = -1);
 
   const std::vector<Measurement> &getMeasurementsCached(uint64_t id);
 
-  std::vector<Sensor> getSensors(size_t limit = -1, size_t offset = 0);
   const std::vector<Sensor> &getSensorsCached();
   const Sensor &getSensorByIdCached(uint64_t id);
   std::vector<Sensor> searchForSensors(std::string name, size_t limit);
@@ -64,21 +57,27 @@ public:
 
   uint64_t sensorFromUID(const std::string &dev_uuid);
 
+  size_t getNumSensors();
+
 private:
   void load();
-  void onSensorBlockLoaded(const DataChunk &chunk);
+  void onSensorBlockLoaded(const DataChunk &chunk, std::vector<char> *buffer);
   void onMeasurementBlockLoaded(const DataChunk &chunk, uint64_t table_id);
 
+  void serializeSensor(const Sensor &sensor, std::vector<char> *buffer);
+  void deserializeSensor(Sensor *sensor, const char *src);
+  std::string deserializeString(const char *src, size_t *off);
+  void serializeString(const std::string &data, std::vector<char> *buffer);
+
   // Returns the table id
-  uint64_t addTable(size_t element_size);
+  uint64_t addTable();
 
   // Creates a new block in the data file.
   uint64_t newFileBlock(void *data = nullptr);
+  void writeFileChunk(void *data, uint64_t idx);
 
   void init_db();
-  void init_indices();
 
-  sqlite3 *_db;
   std::fstream _db_file;
   // The block idx and block data
   std::vector<PositionedIndexChunk> _index_chunks;

@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 
   Database db((std::string(argv[4])));
 
-  size_t id_offset = db.getSensors().size();
+  size_t id_offset = db.getNumSensors();
 
   for (size_t i = 0; i < num_sensors; i++) {
     std::cout << "Sensor " << i << " / " << num_sensors << std::endl;
