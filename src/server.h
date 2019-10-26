@@ -13,7 +13,7 @@ namespace smartwater {
 
 class Server {
 public:
-  Server(Database *database);
+  Server(Database *database, uint16_t port = 8080);
 
   void start();
 

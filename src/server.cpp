@@ -7,8 +7,8 @@
 
 namespace smartwater {
 
-Server::Server(Database *db)
-    : _port(8080), _address("0.0.0.0"), _database(db) {}
+Server::Server(Database *db, uint16_t port)
+    : _port(port), _address("0.0.0.0"), _database(db) {}
 
 void Server::start() {
   _server.Get("/sensors", [this](const httplib::Request &req,
@@ -150,7 +150,8 @@ Server::encodeSensors(Database *database, size_t limit,
   return j;
 }
 
-nlohmann::json Server::encodeHistory(Database *database, size_t limit, uint64_t id) {
+nlohmann::json Server::encodeHistory(Database *database, size_t limit,
+                                     uint64_t id) {
   using nlohmann::json;
   std::vector<Measurement> sensors = database->getMeasurements(id, limit);
   json::array_t root = json::array();
