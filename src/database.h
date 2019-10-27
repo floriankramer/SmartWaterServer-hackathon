@@ -35,6 +35,11 @@ class Database {
     uint64_t next_chunk = 0;
   };
 
+  struct JournalChunk {
+    uint64_t dirty_chunk;
+    char data[4088];
+  };
+
   struct PositionedDataChunk {
     uint64_t idx = 0;
     DataChunk data;
@@ -84,10 +89,14 @@ private:
   // The block idx and block data
   std::vector<PositionedDataChunk> _table_last_chunks;
 
+  JournalChunk _journal_chunk;
+
   // indices and caches
   std::vector<Sensor> _sensors;
   std::vector<std::vector<Measurement>> _measurements;
   std::unordered_map<std::string, uint64_t> _uuid_to_id;
   QGramIndex<3> _sensor_search_index;
+
+  bool _use_journaling;
 };
 } // namespace smartwater

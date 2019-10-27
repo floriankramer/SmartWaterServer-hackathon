@@ -6,7 +6,7 @@
 #include <sys/stat.h>
 
 namespace smartwater {
-Database::Database(const std::string &filename) {
+Database::Database(const std::string &filename) : _use_journaling(false) {
   bool is_db_initialized = true;
   struct stat s;
   int r = 0;
@@ -158,11 +158,17 @@ void Database::init_db() {
   _index_chunks.back().idx = 0;
   _index_chunks.back().data.next_chunk = 0;
   _index_chunks.back().data.num_tables = 0;
-  newFileBlock(&_index_chunks[0].data);
 
-  // Allocate two blocks for basic journaling
-  newFileBlock();
-  newFileBlock();
+  // Manually init three chunks to enable journaling
+  {
+    // One chunk is for the base index, the other two are used for journaling
+    std::vector<char> buff(CHUNK_SIZE * 3, 0);
+    _db_file.seekp(0);
+    _db_file.write(buff.data(), buff.size());
+  }
+
+  writeFileChunk(&_index_chunks[0].data, 0);
+
   addTable();
   _db_file.flush();
   LOG_INFO << "Database initialized" << LOG_END;
@@ -191,11 +197,26 @@ uint64_t Database::newFileBlock(void *data) {
 }
 
 void Database::writeFileChunk(void *data, uint64_t idx) {
-  if (idx == 0) {
-    LOG_DEBUG << "Writing idx 0" << LOG_END;
+  if (_use_journaling) {
+    // Copy the current state into the journal cache
+    char data[CHUNK_SIZE];
+    _db_file.seekg(idx * CHUNK_SIZE);
+    _db_file.read(data, CHUNK_SIZE);
+    _db_file.seekp(2 * CHUNK_SIZE);
+    _db_file.write(data, CHUNK_SIZE);
+
+    // Mark the chunk as dirty
+    _journal_chunk.dirty_chunk = idx;
+    writeFileChunk(&_journal_chunk, 1);
   }
+  // Write the changse
   _db_file.seekp(idx * CHUNK_SIZE);
   _db_file.write(reinterpret_cast<char *>(data), CHUNK_SIZE);
+  if (_use_journaling) {
+    // Clear the journal
+    _journal_chunk.dirty_chunk = 1;
+    writeFileChunk(&_journal_chunk, 1);
+  }
 }
 
 uint64_t Database::addTable() {
@@ -236,6 +257,23 @@ uint64_t Database::addTable() {
 
 void Database::load() {
   LOG_INFO << "Loading the database" << LOG_END;
+  if (_use_journaling) {
+    LOG_DEBUG << "Checking the Journal" << LOG_END;
+    _db_file.seekg(CHUNK_SIZE);
+    _db_file.read(reinterpret_cast<char *>(&_journal_chunk), CHUNK_SIZE);
+    if (_journal_chunk.dirty_chunk != 1) {
+      LOG_WARN << "The journal is not clean, fixing..." << LOG_END;
+      char data[CHUNK_SIZE];
+      _db_file.read(data, CHUNK_SIZE);
+      _db_file.seekp(_journal_chunk.dirty_chunk * CHUNK_SIZE);
+      _db_file.write(data, CHUNK_SIZE);
+      _journal_chunk.dirty_chunk = 1;
+      _db_file.seekp(CHUNK_SIZE);
+      _db_file.write(reinterpret_cast<char *>(&_journal_chunk), CHUNK_SIZE);
+      LOG_WARN << "Reset chunk " << _journal_chunk.dirty_chunk << LOG_END;
+    }
+  }
+
   _db_file.seekg(0);
   _index_chunks.clear();
   _index_chunks.resize(1);

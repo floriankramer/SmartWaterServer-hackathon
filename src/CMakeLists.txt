@@ -10,7 +10,8 @@ add_library(smartwater-server-lib
   sensor.h
   util.h
   qgram.cpp qgram.h
-  logger.h)
+  logger.h
+  octree.cpp octree.h)
 target_link_libraries(smartwater-server-lib pthread sqlite3 ssl crypto)
 
 
