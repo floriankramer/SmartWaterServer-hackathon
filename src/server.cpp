@@ -17,7 +17,8 @@ void Server::start() {
 
   _server.set_logger(
       [](const httplib::Request &req, const httplib::Response &res) {
-        LOG_INFO << "Request for " << req.path << LOG_END;
+        LOG_INFO << req.method << " request for " << req.path << " : '"
+                 << req.body << "'" << LOG_END;
       });
 
   _server.set_error_handler([this](const httplib::Request &req,
@@ -186,14 +187,19 @@ void Server::setCommonHeaders(httplib::Response *response) {
 }
 
 void Server::addMeasurements(const std::string &body) {
+  LOG_DEBUG << "Adding a mesuremrent" << LOG_END;
   using nlohmann::json;
   json j = json::parse(body);
+  LOG_DEBUG << body << LOG_END;
   std::string uid = j["dev_id"].get<std::string>();
 
   Measurement m;
-  m.timestamp = j["payload_fields"]["timestamp"].get<uint64_t>();
+  m.timestamp = time(NULL);
   m.height = j["payload_fields"]["height"].get<double>();
-  _database->addMeasurement(_database->sensorFromUID(uid), m);
+  uint64_t sensor_id = _database->sensorFromUID(uid);
+  LOG_DEBUG << "Trying to add data for a sensor with dev_uid " << sensor_id
+            << " and id " << sensor_id << LOG_END;
+  _database->addMeasurement(sensor_id, m);
 }
 
 void Server::addSensor(const std::string &body) {
